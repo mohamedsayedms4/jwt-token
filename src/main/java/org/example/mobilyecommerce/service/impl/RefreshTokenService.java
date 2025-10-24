@@ -1,6 +1,7 @@
 package org.example.mobilyecommerce.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.model.RefreshToken;
 import org.example.mobilyecommerce.model.User;
 import org.example.mobilyecommerce.repository.RefreshTokenRepository;
@@ -13,40 +14,58 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    // ✅ إنشاء refresh token بشكل عشوائي بنمط xxxx-xxxx-xxxx-xxxx
+    /**
+     * ✅ Create a random refresh token in the format xxxx-xxxx-xxxx-xxxx
+     * Expiry example: 7 days
+     */
     public RefreshToken createRefreshToken(User user) {
         String token = generateTokenFormat();
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(token)
-                .expiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7)) // أسبوع مثلاً
-
+                .expiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7)) // 7 days
                 .build();
-        return refreshTokenRepository.save(refreshToken);
+        RefreshToken savedToken = refreshTokenRepository.save(refreshToken);
+        log.debug("💾 Created new refresh token for user: {}", user.getUsername());
+        return savedToken;
     }
 
-    // ✅ حذف أو تعطيل التوكن عند تسجيل الخروج
+    /**
+     * ✅ Delete all refresh tokens for a user (e.g., on logout)
+     */
     public void deleteByUser(User user) {
         refreshTokenRepository.deleteByUserId(user.getId());
+        log.debug("🗑️ Deleted all refresh tokens for user: {}", user.getUsername());
     }
 
-    // ✅ حذف التوكنات المنتهية تلقائياً (تعمل كل ساعة)
-    @Scheduled(cron = "0 */10 * * * *") // ⏱️ كل 5 دقائق
+    /**
+     * ✅ Scheduled cleanup of expired refresh tokens
+     * Runs every 10 minutes (adjust cron as needed)
+     */
+    @Scheduled(cron = "0 */10 * * * *") // every 10 minutes
     public void deleteExpiredTokens() {
-        refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        int deleted = refreshTokenRepository.deleteAllByExpiryDateBefore(Instant.now());
+        log.debug("🧹 Deleted {} expired refresh tokens", deleted);
     }
 
-    // ✅ التحقق من صلاحية التوكن
+    /**
+     * ✅ Check if a refresh token is valid (exists and not expired)
+     */
     public boolean isValid(String token) {
         Optional<RefreshToken> refreshToken = refreshTokenRepository.findByToken(token);
-        return refreshToken.isPresent() && refreshToken.get().getExpiryDate().isAfter(Instant.now());
+        boolean valid = refreshToken.isPresent() && refreshToken.get().getExpiryDate().isAfter(Instant.now());
+        log.debug("🔍 Refresh token {} is valid: {}", token, valid);
+        return valid;
     }
 
-    // ✅ شكل التوكن xxxx-xxxx-xxxx-xxxx
+    /**
+     * ✅ Generate token in format xxxx-xxxx-xxxx-xxxx
+     */
     private String generateTokenFormat() {
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         StringBuilder formatted = new StringBuilder();

@@ -40,6 +40,6 @@ public class Token {
 
     @PrePersist
     public void setExpiryDate() {
-        this.expiryDate = Instant.now().plusSeconds(60); // ⏱️ دقيقة واحدة مثلاً
+        this.expiryDate = Instant.now().plusSeconds(60*60*24); // ⏱️ دقيقة واحدة مثلاً
     }
 }

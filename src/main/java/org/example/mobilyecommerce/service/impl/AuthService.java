@@ -44,6 +44,10 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
     }
+
+    /**
+     * Signup a new user and issue access & refresh tokens
+     */
     @Transactional
     public AuthResponseVm signup(User user, String ip, String agent) {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
@@ -58,10 +62,13 @@ public class AuthService {
 
         saveUserToken(savedUser, accessToken, false, false, ip, agent);
 
-        log.info("✅ تم إنشاء حساب جديد للمستخدم: {} من IP: {}", savedUser.getUsername(), ip);
+        log.info("✅ New user created: {} from IP: {}", savedUser.getUsername(), ip);
         return new AuthResponseVm(accessToken, refreshToken.getToken());
     }
 
+    /**
+     * Login user and issue new tokens (without deleting old access tokens)
+     */
     @Transactional
     public AuthResponseVm login(AuthRequestVm login, String ip, String agent) {
         authenticationManager.authenticate(
@@ -74,66 +81,62 @@ public class AuthService {
         User user = userRepository.findByUsername(login.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ❌ تعليق أو حذف حذف التوكنات القديمة
-        // tokenRepository.deleteAllByUserId(user.getId());
-        // log.debug("🗑️ تم حذف access tokens القديمة للمستخدم: {}", user.getUsername());
-
+        // Generate new access token & refresh token
         String accessToken = tokenHandler.createAccessToken(user);
-        RefreshToken refreshToken = createRefreshToken(user); // إنشاء refresh token جديد
+        RefreshToken refreshToken = createRefreshToken(user);
 
         saveUserToken(user, accessToken, false, false, ip, agent);
 
-        log.info("✅ تسجيل دخول ناجح للمستخدم: {} من IP: {}", user.getUsername(), ip);
+        log.info("✅ User logged in successfully: {} from IP: {}", user.getUsername(), ip);
         return new AuthResponseVm(accessToken, refreshToken.getToken());
     }
 
-
     /**
-     * ✅ تجديد التوكن باستخدام الـ refresh token
+     * Refresh access token using a valid refresh token
      */
     @Transactional
     public AuthResponseVm refresh(String refreshTokenValue) {
-        // 🔍 البحث عن الـ Refresh Token في قاعدة البيانات
+        // Find refresh token in DB
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
                 .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
-        // ⏰ التحقق من صلاحية الـ Refresh Token
+        // Check if refresh token is expired
         if (refreshToken.isExpired()) {
             refreshTokenRepository.delete(refreshToken);
-            log.warn("⚠️ حاول المستخدم استخدام Refresh Token منتهي الصلاحية: {}", refreshTokenValue);
+            log.warn("⚠️ Attempted use of expired refresh token: {}", refreshTokenValue);
             throw new RuntimeException("Refresh token expired");
         }
 
         User user = refreshToken.getUser();
         if (user == null) {
-            log.error("🚫 الـ Refresh Token لا يحتوي على مستخدم مرتبط");
+            log.error("🚫 Refresh token has no associated user");
             throw new RuntimeException("User not found for this refresh token");
         }
 
-        // ❌ إلغاء جميع الـ access tokens القديمة فقط (دون حذف الـ refresh)
+        // Revoke old access tokens without deleting refresh tokens
         revokeAllUserTokens(user);
-        log.debug("🗑️ تم تعطيل جميع الـ access tokens القديمة للمستخدم: {}", user.getUsername());
+        log.debug("🗑️ All previous access tokens revoked for user: {}", user.getUsername());
 
-        // 🎟️ إنشاء Access Token جديد
+        // Issue new access token
         String newAccessToken = tokenHandler.createAccessToken(user);
 
-        // 💾 حفظ الـ access token الجديد (مع قيم افتراضية للجهاز والعنوان IP)
+        // Save new access token
         saveUserToken(user, newAccessToken, false, false, "unknown-device", "0.0.0.0");
 
-        log.info("🔄 تم إصدار Access Token جديد للمستخدم: {}", user.getUsername());
+        log.info("🔄 New access token issued for user: {}", user.getUsername());
         return new AuthResponseVm(newAccessToken, refreshTokenValue);
     }
 
     /**
-     * ✅ تسجيل الخروج - حذف كل التوكنات
+     * Logout user by deleting all access & refresh tokens
      */
     @Transactional
     public void logout(User user) {
         deleteAllUserTokens(user);
-        log.info("✅ تسجيل خروج ناجح للمستخدم: {}", user.getUsername());
+        log.info("✅ User logged out successfully: {}", user.getUsername());
     }
 
-    // ----------------- دوال داخلية -----------------
+    // ----------------- Internal helper methods -----------------
 
     private void saveUserToken(User user, String jwtToken, boolean expired, boolean revoked, String ip, String agent) {
         Token token = Token.builder()
@@ -145,7 +148,7 @@ public class AuthService {
                 .userAgent(agent)
                 .build();
         tokenRepository.save(token);
-        log.debug("💾 تم حفظ توكن جديد للمستخدم: {} من IP: {}", user.getUsername(), ip);
+        log.debug("💾 New token saved for user: {} from IP: {}", user.getUsername(), ip);
     }
 
     private void revokeAllUserTokens(User user) {
@@ -157,34 +160,37 @@ public class AuthService {
             t.setRevoked(true);
         });
         tokenRepository.saveAll(validUserTokens);
-        log.debug("🔒 تم تعطيل {} توكن للمستخدم: {}", validUserTokens.size(), user.getUsername());
+        log.debug("🔒 Revoked {} access tokens for user: {}", validUserTokens.size(), user.getUsername());
     }
 
     private void deleteAllUserTokens(User user) {
         refreshTokenRepository.deleteByUserId(user.getId());
-        log.debug("🗑️ تم حذف refresh token للمستخدم: {}", user.getUsername());
+        log.debug("🗑️ Deleted refresh tokens for user: {}", user.getUsername());
         tokenRepository.deleteAllByUserId(user.getId());
-        log.debug("🗑️ تم حذف جميع access tokens للمستخدم: {}", user.getUsername());
+        log.debug("🗑️ Deleted all access tokens for user: {}", user.getUsername());
     }
 
     /**
-     * ✅ إنشاء Refresh Token جديد (دقيقة واحدة صلاحية)
+     * Create a new refresh token (1-minute expiry)
      */
     private RefreshToken createRefreshToken(User user) {
         String tokenValue = generateReadableToken();
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(tokenValue)
-                .expiryDate(Instant.now().plus(1, ChronoUnit.MINUTES)) // ⏱️ دقيقة واحدة
+                .expiryDate(Instant.now().plus(1, ChronoUnit.MINUTES)) // 1-minute expiry
                 .expired(false)
                 .build();
         return refreshTokenRepository.save(refreshToken);
     }
 
+    /**
+     * Generate a human-readable token in format XXXX-XXXX-XXXX-XXXX
+     */
     private String generateReadableToken() {
         SecureRandom random = new SecureRandom();
         StringBuilder token = new StringBuilder();
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=/";
         for (int i = 0; i < 4; i++) {
             if (i > 0) token.append("-");
             for (int j = 0; j < 4; j++) {

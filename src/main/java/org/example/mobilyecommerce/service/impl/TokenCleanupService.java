@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 /**
- * ✅ سيرفس مخصص لتنظيف التوكنات المنتهية تلقائياً
+ * Service responsible for automatic cleanup of expired or revoked access tokens.
  */
 @Service
 @Slf4j
@@ -23,62 +23,60 @@ public class TokenCleanupService {
     private final JwtToken jwtToken;
 
     /**
-     * ✅ المرحلة الأولى: تحديث التوكنات المنتهية (كل دقيقة)
-     * يعلّم التوكنات اللي انتهت صلاحيتها بـ expired = true
+     * Stage 1: Mark expired tokens
+     * Runs every minute, sets expired = true for tokens past their expiry date
      */
-    @Scheduled(cron = "0 * * * * *") // ⏱️ كل دقيقة
+    @Scheduled(cron = "0 * * * * *") // every minute
     @Transactional
     public void markExpiredTokens() {
         try {
-            log.debug("🔍 فحص التوكنات المنتهية عند: {}", Instant.now());
+            log.debug("🔍 Checking for expired tokens at: {}", Instant.now());
 
-            // تحديث التوكنات اللي تاريخها خلص
             int updatedCount = tokenRepository.markExpiredTokens(Instant.now());
 
             if (updatedCount > 0) {
-                log.info("⚠️ تم تعليم {} توكن كـ منتهي الصلاحية", updatedCount);
+                log.info("⚠️ Marked {} tokens as expired", updatedCount);
+            } else {
+                log.debug("ℹ️ No tokens needed marking as expired");
             }
         } catch (Exception e) {
-            log.error("❌ خطأ أثناء تحديث التوكنات المنتهية: {}", e.getMessage(), e);
+            log.error("❌ Error while marking expired tokens: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * ✅ المرحلة الثانية: حذف التوكنات المنتهية (كل 5 دقائق)
-     * يمسح التوكنات اللي اتعلّمت expired = true من فترة
+     * Stage 2: Delete expired or revoked tokens
+     * Runs every 2 minutes (adjust cron as needed)
      */
-    @Scheduled(cron = "0 */2 * * * *") // ⏱️ كل 5 دقائق
+    @Scheduled(cron = "0 */2 * * * *") // every 2 minutes
     @Transactional
     public void deleteExpiredTokens() {
         try {
-            log.info("🧹 بدأ حذف التوكنات المنتهية عند: {}", Instant.now());
+            log.info("🧹 Starting deletion of expired/revoked tokens at: {}", Instant.now());
 
-            // حذف التوكنات المنتهية أو الملغاة
             int deletedCount = tokenRepository.deleteExpiredAndRevokedTokens();
 
             if (deletedCount > 0) {
-                log.info("✅ تم حذف {} توكن منتهي من قاعدة البيانات", deletedCount);
+                log.info("✅ Deleted {} expired/revoked tokens from database", deletedCount);
             } else {
-                log.debug("ℹ️ لا توجد توكنات منتهية للحذف");
+                log.debug("ℹ️ No expired/revoked tokens to delete");
             }
         } catch (Exception e) {
-            log.error("❌ خطأ أثناء حذف التوكنات المنتهية: {}", e.getMessage(), e);
+            log.error("❌ Error while deleting expired/revoked tokens: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * ✅ حذف فوري لجميع التوكنات المنتهية (يمكن استدعاؤه يدوياً)
+     * Immediate/manual cleanup for expired/revoked tokens
      */
     @Transactional
     public void cleanupNow() {
-        log.info("🧹 بدء التنظيف الفوري للتوكنات...");
+        log.info("🧹 Performing immediate cleanup of tokens...");
 
-        // أولاً: تعليم المنتهية
         int marked = tokenRepository.markExpiredTokens(Instant.now());
-        log.info("⚠️ تم تعليم {} توكن", marked);
+        log.info("⚠️ Marked {} tokens as expired", marked);
 
-        // ثانياً: حذفها
         int deleted = tokenRepository.deleteExpiredAndRevokedTokens();
-        log.info("✅ تنظيف فوري: تم حذف {} توكن", deleted);
+        log.info("✅ Immediate cleanup: deleted {} tokens", deleted);
     }
 }

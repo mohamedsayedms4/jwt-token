@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 /**
- * ✅ سيرفس مسؤول عن تنظيف الـ Refresh Tokens المنتهية تلقائياً
+ * Service responsible for automatic cleanup of expired refresh tokens.
  */
 @Service
 @Slf4j
@@ -20,60 +20,61 @@ public class RefreshTokenCleanupService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     /**
-     * ✅ المرحلة الأولى: تعليم الـ refresh tokens المنتهية (كل 5 دقائق)
+     * Stage 1: Mark expired refresh tokens (every 30 minutes)
+     * Note: Cron here is every 30 minutes (adjust if you want 5 min interval)
      */
-    @Scheduled(cron = "0 */30 * * * *") // ⏱️ كل 5 دقائق
+    @Scheduled(cron = "0 */30 * * * *") // every 30 minutes
     @Transactional
     public void markExpiredRefreshTokens() {
         try {
-            log.debug("🔍 فحص الـ refresh tokens المنتهية عند: {}", Instant.now());
+            log.debug("🔍 Checking for expired refresh tokens at: {}", Instant.now());
 
             int updatedCount = refreshTokenRepository.markExpiredRefreshTokens(Instant.now());
 
             if (updatedCount > 0) {
-                log.info("⚠️ تم تعليم {} refresh token كـ منتهي الصلاحية", updatedCount);
+                log.info("⚠️ Marked {} refresh tokens as expired", updatedCount);
             } else {
-                log.debug("ℹ️ لا توجد refresh tokens تحتاج تعليم كـ منتهية");
+                log.debug("ℹ️ No refresh tokens needed marking as expired");
             }
         } catch (Exception e) {
-            log.error("❌ خطأ أثناء تحديث الـ refresh tokens المنتهية: {}", e.getMessage(), e);
+            log.error("❌ Error while marking expired refresh tokens: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * ✅ المرحلة الثانية: حذف الـ refresh tokens المنتهية (كل 30 دقيقة)
+     * Stage 2: Delete expired refresh tokens (every 30 minutes)
      */
-    @Scheduled(cron = "0 */30 * * * *") // ⏱️ كل 30 دقيقة
+    @Scheduled(cron = "0 */30 * * * *") // every 30 minutes
     @Transactional
     public void deleteExpiredRefreshTokens() {
         try {
-            log.info("🧹 بدأ حذف الـ refresh tokens المنتهية عند: {}", Instant.now());
+            log.info("🧹 Starting deletion of expired refresh tokens at: {}", Instant.now());
 
             int deletedCount = refreshTokenRepository.deleteExpiredRefreshTokens(Instant.now());
 
             if (deletedCount > 0) {
-                log.info("✅ تم حذف {} refresh token منتهي من قاعدة البيانات", deletedCount);
+                log.info("✅ Deleted {} expired refresh tokens from database", deletedCount);
             } else {
-                log.debug("ℹ️ لا توجد refresh tokens منتهية للحذف");
+                log.debug("ℹ️ No expired refresh tokens to delete");
             }
         } catch (Exception e) {
-            log.error("❌ خطأ أثناء حذف الـ refresh tokens المنتهية: {}", e.getMessage(), e);
+            log.error("❌ Error while deleting expired refresh tokens: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * ✅ تنظيف فوري (يدوي)
+     * Immediate/manual cleanup of expired refresh tokens
      */
     @Transactional
     public void cleanupNow() {
-        log.info("🧹 بدء التنظيف الفوري للـ refresh tokens...");
+        log.info("🧹 Performing immediate cleanup of refresh tokens...");
 
         Instant now = Instant.now();
 
         int marked = refreshTokenRepository.markExpiredRefreshTokens(now);
-        log.info("⚠️ تم تعليم {} refresh token كـ منتهي", marked);
+        log.info("⚠️ Marked {} refresh tokens as expired", marked);
 
         int deleted = refreshTokenRepository.deleteExpiredRefreshTokens(now);
-        log.info("✅ تنظيف فوري: تم حذف {} refresh token", deleted);
+        log.info("✅ Immediate cleanup: deleted {} refresh tokens", deleted);
     }
 }

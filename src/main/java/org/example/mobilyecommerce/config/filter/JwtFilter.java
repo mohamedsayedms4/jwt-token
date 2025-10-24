@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.config.iwt.TokenHandler;
 import org.example.mobilyecommerce.model.User;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RequiredArgsConstructor
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -32,8 +34,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // إذا لم يكن هناك توكن أو ليس بصيغة Bearer، تابع الفلتر بدون مصادقة
+        // If no token or not Bearer type, skip authentication
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No Bearer token found, skipping authentication for path {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -42,38 +45,50 @@ public class JwtFilter extends OncePerRequestFilter {
         User user;
 
         try {
-            // تحقق من التوكن مع IP و User-Agent
+            // Validate the token along with client IP and User-Agent
             user = tokenHandler.checkToken(token, request.getRemoteAddr(), request.getHeader("User-Agent"));
+
             if (user == null) {
+                log.warn("Token validation failed: unknown device or mismatched token for IP {} and path {}",
+                        request.getRemoteAddr(), request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Access denied: unknown device or mismatched token");
                 return;
             }
+
+            log.debug("Token validated successfully for user {} on path {}", user.getUsername(), request.getRequestURI());
+
         } catch (RuntimeException e) {
+            log.error("Token validation error: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(e.getMessage());
             return;
         }
 
-        // إنشاء السلطات (Authorities)
+        // Map roles to authorities for Spring Security
         List<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().toUpperCase()))
                 .collect(Collectors.toList());
 
-        // إنشاء كائن المصادقة وتخزينه في السياق
+        // Create authentication object and set it in the security context
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(user, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.debug("Authentication set in SecurityContext for user {}", user.getUsername());
 
-        // تابع الفلاتر الباقية
+        // Continue with the remaining filters
         filterChain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // استثناء مسارات التسجيل وتسجيل الدخول فقط
+        // Skip filter for login and signup endpoints
         String path = request.getRequestURI();
-        return path.contains("/api/auth/login") || path.contains("/api/auth/signup");
+        boolean skip = path.contains("/api/auth/login") || path.contains("/api/auth/signup");
+        if (skip) {
+            log.debug("Skipping JwtFilter for path {}", path);
+        }
+        return skip;
     }
 }
