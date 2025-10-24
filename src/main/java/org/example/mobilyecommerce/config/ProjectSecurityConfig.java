@@ -38,7 +38,7 @@ public class ProjectSecurityConfig {
 
                 .cors(corsConfig -> corsConfig.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Collections.singletonList("http://127.0.0.1:5500")); // origin واضح
+                    config.setAllowedOrigins(Collections.singletonList("*")); // origin واضح
                     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // السماح بكل الطرق المهمة
                     config.setAllowedHeaders(Arrays.asList("*")); // السماح بأي header
                     config.setAllowCredentials(true); // السماح بالكوكيز و Authorization header
