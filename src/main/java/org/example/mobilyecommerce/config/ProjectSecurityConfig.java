@@ -38,11 +38,12 @@ public class ProjectSecurityConfig {
 
                 .cors(corsConfig -> corsConfig.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Collections.singletonList("*")); // origin واضح
-                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // السماح بكل الطرق المهمة
-                    config.setAllowedHeaders(Arrays.asList("*")); // السماح بأي header
-                    config.setAllowCredentials(true); // السماح بالكوكيز و Authorization header
-                    config.setMaxAge(3600L); // مدة صلاحية preflight
+                    config.setAllowedOriginPatterns(Arrays.asList("*"));
+                    config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+                    config.setAllowedHeaders(Arrays.asList("*"));
+                    config.setAllowCredentials(true);
+                    config.setMaxAge(3600L);
+
                     return config;
                 }))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
