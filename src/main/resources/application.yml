@@ -3,18 +3,19 @@ spring:
     name: mobily-ecommerce
 
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=springsec;encrypt=true;trustServerCertificate=true
-    username: test
-    password: "9006"
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-
+    url: jdbc:mysql://72.60.188.251:3306/ipv?useSSL=false&serverTimezone=UTC
+    username: mohalhal
+    password: "re9006#OP"
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-
-
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
 
 token:
   secret: FFEvJ($ePwE7ep6L6DRg(Du+U!@a7nh3FY*TTuf7tNIAzEvHjHn8cMD*uc+ENG3r
