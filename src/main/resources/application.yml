@@ -18,5 +18,5 @@ spring:
 
 token:
   secret: FFEvJ($ePwE7ep6L6DRg(Du+U!@a7nh3FY*TTuf7tNIAzEvHjHn8cMD*uc+ENG3r
-  access-time: 1m
+  access-time: 60m
   refresh-time: 7d
