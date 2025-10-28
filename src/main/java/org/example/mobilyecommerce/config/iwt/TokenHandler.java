@@ -2,6 +2,7 @@ package org.example.mobilyecommerce.config.iwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.example.mobilyecommerce.model.Role;
 import org.example.mobilyecommerce.model.Token;
 import org.example.mobilyecommerce.model.User;
@@ -17,6 +18,7 @@ import java.util.*;
 
 
 @Service
+@Getter
 public class TokenHandler {
 
     private final UserRepository userRepository;
@@ -58,27 +60,7 @@ public class TokenHandler {
                 .compact();
     }
 
-    // ✅ إنشاء refresh token
-    public String createRefreshToken(User user) {
-        return createToken(user, refreshTime, "REFRESH");
-    }
 
-    private String createToken(User user, Duration duration, String type) {
-        Date issueDate = new Date();
-        Date expirationDate = Date.from(issueDate.toInstant().plus(duration));
-
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("username", user.getUsername());
-        claims.put("type", type);
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject("Mobily.cloud")
-                .setIssuedAt(issueDate)
-                .setExpiration(expirationDate)
-                .signWith(SignatureAlgorithm.HS512, key)
-                .compact();
-    }
 
     public User checkToken(String token, String requestIp, String requestAgent) {
         try {
@@ -114,20 +96,4 @@ public class TokenHandler {
         }
     }
 
-
-    // ✅ تحقق من Refresh Token
-    public User checkRefreshToken(String token) {
-        try {
-            Claims claims = jwtParser.parseClaimsJws(token).getBody();
-            String username = claims.get("username", String.class);
-            String type = claims.get("type", String.class);
-
-            if (!"REFRESH".equals(type)) return null;
-
-            return userRepository.findByUsername(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        } catch (JwtException e) {
-            return null;
-        }
-    }
 }

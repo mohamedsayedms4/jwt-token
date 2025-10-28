@@ -54,8 +54,10 @@ public class AuthController {
      * ✅ تجديد الـ Access Token باستخدام الـ Refresh Token
      */
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponseVm> refresh(@RequestParam String refreshToken) {
-        AuthResponseVm response = authService.refresh(refreshToken);
+    public ResponseEntity<AuthResponseVm> refresh(@RequestParam String refreshToken , HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        String agent = request.getHeader("User-Agent");
+        AuthResponseVm response = authService.refresh(refreshToken,ip, agent);
         return ResponseEntity.ok(response);
     }
 

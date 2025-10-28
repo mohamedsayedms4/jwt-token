@@ -2,6 +2,7 @@ package org.example.mobilyecommerce.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -17,16 +18,16 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * ✅ بدل OneToOne بخليها ManyToOne
-     * عشان المستخدم يقدر يمتلك أكتر من Refresh Token
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(nullable = false, unique = true, length = 1000)
     private String token;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
     @Column(nullable = false)
     private Instant expiryDate;
@@ -35,9 +36,9 @@ public class RefreshToken {
     private boolean expired = false;
 
     /**
-     * ✅ التحقق من انتهاء صلاحية التوكن
+     * Check if refresh token is expired (by flag OR by date)
      */
     public boolean isExpired() {
-        return this.expiryDate.isBefore(Instant.now()) || this.expired;
+        return this.expired || this.expiryDate.isBefore(Instant.now());
     }
 }

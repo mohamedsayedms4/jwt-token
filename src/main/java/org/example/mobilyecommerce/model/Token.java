@@ -19,14 +19,18 @@ public class Token {
     @Column(unique = true, nullable = false, length = 1000)
     private String token;
 
-    private boolean revoked;
-    private boolean expired;
+    @Column(nullable = false)
+    private boolean revoked = false;
+
+    @Column(nullable = false)
+    private boolean expired = false;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    private Instant expiryDate; // ⏳ مدة صلاحية التوكن
+    @Column(nullable = false)
+    private Instant expiryDate;
 
     @Column(length = 45)
     private String ipAddress;
@@ -38,8 +42,10 @@ public class Token {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @PrePersist
-    public void setExpiryDate() {
-        this.expiryDate = Instant.now().plusSeconds(60*60*24); // ⏱️ دقيقة واحدة مثلاً
+    /**
+     * Check if token is expired (by flag OR by date)
+     */
+    public boolean isExpired() {
+        return this.expired || this.expiryDate.isBefore(Instant.now());
     }
 }
