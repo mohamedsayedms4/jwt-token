@@ -101,16 +101,26 @@ public class AuthService implements AuthServiceInterface {
     }
 
     @Override
-    @Transactional
+    @Transactional  // ✅ مهم جداً!
     public void logout(User user) {
         log.info("🚪 Logout request for user: {}", user.getUsername());
 
-        revokeAllUserAccessTokens(user);
-        refreshTokenService.deleteByUser(user);
+        try {
+            // 1. إلغاء Access Tokens
+            revokeAllUserAccessTokens(user);
+            log.debug("✅ Revoked all access tokens");
 
-        log.info("✅ User logged out successfully: {}", user.getUsername());
+            // 2. حذف Refresh Tokens
+            refreshTokenService.deleteByUser(user);
+            log.debug("✅ Deleted all refresh tokens");
+
+            log.info("✅ User logged out successfully: {}", user.getUsername());
+
+        } catch (Exception e) {
+            log.error("❌ Error during logout: {}", e.getMessage(), e);
+            throw new RuntimeException("Logout failed: " + e.getMessage());
+        }
     }
-
     // ---------------- Internal helpers ----------------
 
     /**

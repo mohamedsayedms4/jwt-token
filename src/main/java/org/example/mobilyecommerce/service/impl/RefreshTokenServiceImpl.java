@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +27,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenServiceInterface {
     @Transactional
     public RefreshToken createRefreshToken(User user) {
         log.debug("🔑 Creating refresh token for user: {}", user.getUsername());
-
-        // حذف أي refresh tokens قديمة للمستخدم
-//        refreshTokenRepository.deleteByUserId(user.getId());
 
         String tokenValue = generateReadableToken();
         Instant now = Instant.now();
@@ -53,11 +51,59 @@ public class RefreshTokenServiceImpl implements RefreshTokenServiceInterface {
                 .orElseThrow(() -> new TokenNotFoundException("Refresh token not found"));
     }
 
+    /**
+     * ✅ حذف جميع الـ Refresh Tokens للمستخدم - مع Debug كامل
+     */
     @Override
     @Transactional
     public void deleteByUser(User user) {
-        log.debug("🗑️ Deleting refresh tokens for user: {}", user.getUsername());
-        refreshTokenRepository.deleteByUserId(user.getId());
+        log.info("🗑️ Starting delete refresh tokens for user: {} (ID: {})",
+                user.getUsername(), user.getId());
+
+        try {
+            // 1. التحقق من وجود tokens قبل الحذف
+            List<RefreshToken> existingTokens = refreshTokenRepository.findByUserId(user.getId());
+            log.info("📊 Found {} refresh token(s) for user {}", existingTokens.size(), user.getUsername());
+
+            if (existingTokens.isEmpty()) {
+                log.warn("⚠️ No refresh tokens found for user: {}", user.getUsername());
+                return;
+            }
+
+            // 2. طباعة IDs الـ tokens قبل الحذف
+            existingTokens.forEach(token ->
+                    log.debug("🔍 Token to delete - ID: {}, Token: {}", token.getId(),
+                            token.getToken().substring(0, Math.min(10, token.getToken().length())))
+            );
+
+            // 3. محاولة الحذف
+            log.info("🔄 Attempting to delete tokens...");
+            refreshTokenRepository.deleteByUserId(user.getId());
+
+            // 4. Flush للتأكد من تنفيذ الحذف فوراً
+            refreshTokenRepository.flush();
+            log.info("💾 Flush executed");
+
+            // 5. التحقق بعد الحذف
+            List<RefreshToken> remainingTokens = refreshTokenRepository.findByUserId(user.getId());
+            log.info("📊 After delete: {} refresh token(s) remaining for user {}",
+                    remainingTokens.size(), user.getUsername());
+
+            if (remainingTokens.isEmpty()) {
+                log.info("✅ Successfully deleted all refresh tokens for user: {}", user.getUsername());
+            } else {
+                log.error("❌ Failed to delete all tokens! {} token(s) still exist", remainingTokens.size());
+                remainingTokens.forEach(token ->
+                        log.error("❌ Remaining token - ID: {}, Token: {}",
+                                token.getId(), token.getToken())
+                );
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Exception while deleting refresh tokens for user {}: {}",
+                    user.getUsername(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override

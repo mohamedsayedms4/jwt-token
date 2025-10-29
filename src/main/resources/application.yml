@@ -17,8 +17,13 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.example.mobilyecommerce: DEBUG
 token:
   secret: FFEvJ($ePwE7ep6L6DRg(Du+U!@a7nh3FY*TTuf7tNIAzEvHjHn8cMD*uc+ENG3r
-  access-time: 30m
+  access-time: 5m
   refresh-time: 10d
 
