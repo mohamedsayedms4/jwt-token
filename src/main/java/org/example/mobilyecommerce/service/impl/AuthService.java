@@ -38,7 +38,7 @@ public class AuthService implements AuthServiceInterface {
     @Override
     @Transactional
     public AuthResponseVm signup(User user, String ip, String agent) {
-        log.info("🔐 Signup attempt for username: {}", user.getUsername());
+        log.info("🔐 Signup attempt for username: {} from IP: {}", user.getUsername(), ip);
 
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             log.warn("⚠️ Username already exists: {}", user.getUsername());
@@ -60,7 +60,7 @@ public class AuthService implements AuthServiceInterface {
     @Override
     @Transactional
     public AuthResponseVm login(AuthRequestVm login, String ip, String agent) {
-        log.info("🔐 Login attempt for username: {}", login.getUsername());
+        log.info("🔐 Login attempt for username: {} from IP: {}", login.getUsername(), ip);
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
@@ -81,7 +81,7 @@ public class AuthService implements AuthServiceInterface {
     @Override
     @Transactional
     public AuthResponseVm refresh(String refreshTokenValue, String ip, String agent) {
-        log.info("🔄 Refresh token request");
+        log.info("🔄 Refresh token request from IP: {}", ip);
 
         if (!refreshTokenService.isValid(refreshTokenValue)) {
             log.warn("⚠️ Invalid or expired refresh token");
@@ -96,7 +96,7 @@ public class AuthService implements AuthServiceInterface {
         String newAccessToken = tokenHandler.createAccessToken(user);
         saveAccessToken(user, newAccessToken, ip, agent);
 
-        log.info("🔄 New access token issued for user: {}", user.getUsername());
+        log.info("🔄 New access token issued for user: {} from IP: {}", user.getUsername(), ip);
         return new AuthResponseVm(newAccessToken, refreshTokenValue);
     }
 
@@ -113,6 +113,9 @@ public class AuthService implements AuthServiceInterface {
 
     // ---------------- Internal helpers ----------------
 
+    /**
+     * حفظ Access Token في قاعدة البيانات
+     */
     private void saveAccessToken(User user, String jwtToken, String ip, String agent) {
         Instant now = Instant.now();
         Token token = Token.builder()
@@ -126,9 +129,12 @@ public class AuthService implements AuthServiceInterface {
                 .expiryDate(now.plus(tokenHandler.getAccessTime()))
                 .build();
         tokenRepository.save(token);
-        log.debug("💾 Access token saved for user: {}", user.getUsername());
+        log.debug("💾 Access token saved for user: {} with IP: {}", user.getUsername(), ip);
     }
 
+    /**
+     * إلغاء جميع الـ Access Tokens النشطة للمستخدم
+     */
     private void revokeAllUserAccessTokens(User user) {
         var tokens = tokenRepository.findAllValidTokenByUser(user.getId());
         if (!tokens.isEmpty()) {

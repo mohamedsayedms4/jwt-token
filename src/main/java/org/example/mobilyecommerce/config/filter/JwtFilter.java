@@ -26,6 +26,24 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final TokenHandler tokenHandler;
 
+    /**
+     * استخراج IP الحقيقي للمستخدم من Headers (للتعامل مع Reverse Proxy)
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // في حالة وجود عدة IPs (proxy chain)، خذ الأول
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -49,17 +67,22 @@ public class JwtFilter extends OncePerRequestFilter {
         User user;
 
         try {
-            user = tokenHandler.checkToken(token, request.getRemoteAddr(), request.getHeader("User-Agent"));
+            String clientIp = getClientIp(request);
+            String userAgent = request.getHeader("User-Agent");
+
+            log.debug("🌐 Client IP: {}, User-Agent: {}", clientIp, userAgent);
+
+            user = tokenHandler.checkToken(token, clientIp, userAgent);
 
             if (user == null) {
                 log.warn("🔴 Token validation failed — possibly invalid or from unknown device. IP: {}, Path: {}",
-                        request.getRemoteAddr(), path);
+                        clientIp, path);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Access denied: unknown device or mismatched token");
                 return;
             }
 
-            log.info("🟢 Token validated successfully for user '{}' (IP: {})", user.getUsername(), request.getRemoteAddr());
+            log.info("🟢 Token validated successfully for user '{}' (IP: {})", user.getUsername(), clientIp);
 
         } catch (RuntimeException e) {
             log.error("🔴 Token validation error: {} (Path: {})", e.getMessage(), path);
