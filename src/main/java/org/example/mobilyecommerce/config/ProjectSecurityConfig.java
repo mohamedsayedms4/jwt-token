@@ -15,18 +15,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
-/**
- * ✅ Secure Spring Security Configuration
- * - JWT authentication (stateless)
- * - Strict CORS for production
- * - Rate limiting (Bucket4j)
- */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -38,28 +31,15 @@ public class ProjectSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // No session — JWT-based
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Disable CSRF (for APIs)
                 .csrf(csrf -> csrf.disable())
-
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/hello").authenticated()
                         .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/refresh").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
-
-                // ✅ Use our custom CORS configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Filters
                 .addFilterBefore(bucket4jRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-
-                // Disable default login forms
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable());
 
@@ -67,35 +47,21 @@ public class ProjectSecurityConfig {
     }
 
     /**
-     * ✅ Secure CORS Configuration for bigzero.online
+     * ✅ Strict CORS configuration — only allow https://bigzero.online
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Allowed Origins (Production + Local)
-        config.setAllowedOrigins(List.of(
-                "https://bigzero.online",
-                "https://www.bigzero.online",
-                "http://localhost:3000" // for local testing only
-        ));
-
-        // ✅ Only allow safe methods
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // ✅ Allow headers for JWT tokens and custom requests
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin"));
-
-        // ✅ Allow credentials (for cookies or Authorization headers)
+        // Allow only frontend domain
+        config.setAllowedOrigins(List.of("https://bigzero.online", "https://www.bigzero.online"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
         config.setAllowCredentials(true);
-
-        // ✅ Cache preflight responses for 1 hour
         config.setMaxAge(3600L);
 
-        // Apply to all paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
 
