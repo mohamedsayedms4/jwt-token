@@ -32,34 +32,37 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
         String authHeader = request.getHeader("Authorization");
 
-        // If no token or not Bearer type, skip authentication
+        log.debug("🟦 Incoming request: {} {}", request.getMethod(), path);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.debug("No Bearer token found, skipping authentication for path {}", request.getRequestURI());
+            log.debug("⚪ No Bearer token found — skipping authentication for path {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7).trim();
+        log.debug("🟨 Extracted token: {}", token.isEmpty() ? "[EMPTY]" : "[REDACTED]");
+
         User user;
 
         try {
-            // Validate the token along with client IP and User-Agent
             user = tokenHandler.checkToken(token, request.getRemoteAddr(), request.getHeader("User-Agent"));
 
             if (user == null) {
-                log.warn("Token validation failed: unknown device or mismatched token for IP {} and path {}",
-                        request.getRemoteAddr(), request.getRequestURI());
+                log.warn("🔴 Token validation failed — possibly invalid or from unknown device. IP: {}, Path: {}",
+                        request.getRemoteAddr(), path);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Access denied: unknown device or mismatched token");
                 return;
             }
 
-            log.debug("Token validated successfully for user {} on path {}", user.getUsername(), request.getRequestURI());
+            log.info("🟢 Token validated successfully for user '{}' (IP: {})", user.getUsername(), request.getRemoteAddr());
 
         } catch (RuntimeException e) {
-            log.error("Token validation error: {}", e.getMessage());
+            log.error("🔴 Token validation error: {} (Path: {})", e.getMessage(), path);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(e.getMessage());
             return;
@@ -70,24 +73,24 @@ public class JwtFilter extends OncePerRequestFilter {
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().toUpperCase()))
                 .collect(Collectors.toList());
 
-        // Create authentication object and set it in the security context
+        log.debug("🟪 Mapped roles to authorities for user {}: {}", user.getUsername(), authorities);
+
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(user, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.debug("Authentication set in SecurityContext for user {}", user.getUsername());
+        log.debug("🟩 SecurityContext updated successfully for user {}", user.getUsername());
 
-        // Continue with the remaining filters
         filterChain.doFilter(request, response);
+        log.debug("✅ Request {} completed for user {}", path, user.getUsername());
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Skip filter for login and signup endpoints
         String path = request.getRequestURI();
         boolean skip = path.contains("/api/auth/login") || path.contains("/api/auth/signup");
         if (skip) {
-            log.debug("Skipping JwtFilter for path {}", path);
+            log.debug("⚫ Skipping JwtFilter for path {}", path);
         }
         return skip;
     }

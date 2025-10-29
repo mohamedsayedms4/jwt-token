@@ -21,7 +21,7 @@ public class TokenCleanupScheduler {
     /**
      * Mark expired access tokens (every 1 minute)
      */
-    @Scheduled(cron = "0 */2 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public void markExpiredAccessTokens() {
         try {
             accessTokenCleanupService.markExpiredTokens();
@@ -33,7 +33,7 @@ public class TokenCleanupScheduler {
     /**
      * Delete expired/revoked access tokens (every 2 minutes)
      */
-    @Scheduled(cron = "0 */2 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public void deleteExpiredAccessTokens() {
         try {
             accessTokenCleanupService.deleteExpiredTokens();
@@ -45,7 +45,7 @@ public class TokenCleanupScheduler {
     /**
      * Mark expired refresh tokens (every 30 minutes)
      */
-    @Scheduled(cron = "0 */2 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public void markExpiredRefreshTokens() {
         try {
             refreshTokenService.markExpiredTokens();
@@ -57,7 +57,7 @@ public class TokenCleanupScheduler {
     /**
      * Delete expired refresh tokens (every 30 minutes)
      */
-    @Scheduled(cron = "0 */2 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public void deleteExpiredRefreshTokens() {
         try {
             refreshTokenService.deleteExpiredTokens();
