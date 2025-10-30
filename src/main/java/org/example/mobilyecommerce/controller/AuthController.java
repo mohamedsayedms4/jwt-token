@@ -1,12 +1,15 @@
 package org.example.mobilyecommerce.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.controller.vm.AuthRequestVm;
 import org.example.mobilyecommerce.controller.vm.AuthResponseVm;
+import org.example.mobilyecommerce.controller.vm.ResetPasswordRequest;
+import org.example.mobilyecommerce.dto.UserDto;
+import org.example.mobilyecommerce.mapper.UserMapper;
 import org.example.mobilyecommerce.model.User;
-import org.example.mobilyecommerce.repository.UserRepository;
 import org.example.mobilyecommerce.service.impl.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,13 +19,12 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
-
+    private final UserMapper userMapper;
     /**
      * ✅ استخراج IP الحقيقي للمستخدم من Headers (للتعامل مع Reverse Proxy)
      */
@@ -60,13 +62,13 @@ public class AuthController {
      * ✅ إنشاء حساب جديد - مع تسجيل IP و Agent
      */
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponseVm> signup(@RequestBody User account, HttpServletRequest request) {
+    public ResponseEntity<AuthResponseVm> signup(@RequestBody @Valid UserDto account, HttpServletRequest request) {
         String ip = getClientIp(request);
         String agent = request.getHeader("User-Agent");
 
         log.info("📝 Signup request from IP: {} for user: {}", ip, account.getUsername());
-
-        AuthResponseVm response = authService.signup(account, ip, agent);
+        User user = userMapper.toEntity(account);
+        AuthResponseVm response = authService.signup(user, ip, agent);
         return ResponseEntity.ok(response);
     }
 
@@ -155,5 +157,17 @@ public class AuthController {
                 "xRealIp", xRealIp != null ? xRealIp : "null",
                 "remoteAddr", remoteAddr != null ? remoteAddr : "null"
         ));
+    }
+
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        boolean success = authService.resetPassword(request.getUsername(), request.getNewPassword());
+
+        if (success) {
+            return ResponseEntity.ok("Password reset successfully.");
+        } else {
+            return ResponseEntity.badRequest().body("Failed to reset password.");
+        }
     }
 }

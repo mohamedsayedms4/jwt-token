@@ -12,5 +12,6 @@ public interface AuthServiceInterface {
 
     AuthResponseVm refresh(String refreshTokenValue, String ip, String agent);
 
+    Boolean resetPassword(String username, String newPassword);
     void logout(User user);
 }

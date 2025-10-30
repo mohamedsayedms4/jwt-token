@@ -1,8 +1,8 @@
 package org.example.mobilyecommerce.config;
 
 import lombok.RequiredArgsConstructor;
+import org.example.mobilyecommerce.exception.InvalidCredentialsException;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -25,7 +25,7 @@ public class UserNamePasswordAuthenticationProvider implements AuthenticationPro
         if (passwordEncoder.matches(password, userDetails.getPassword())) {
             return new UsernamePasswordAuthenticationToken(username, password, userDetails.getAuthorities());
         } else {
-            throw new BadCredentialsException("invalid password");
+            throw new InvalidCredentialsException("invalid password");
         }    }
 
     @Override

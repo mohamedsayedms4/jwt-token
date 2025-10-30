@@ -31,7 +31,7 @@ public class User {
 
     private String phone;
 
-    private String address;
+//    private String address;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

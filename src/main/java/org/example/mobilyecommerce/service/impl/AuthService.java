@@ -8,6 +8,7 @@ import org.example.mobilyecommerce.controller.vm.AuthResponseVm;
 import org.example.mobilyecommerce.exception.InvalidCredentialsException;
 import org.example.mobilyecommerce.exception.TokenExpiredException;
 import org.example.mobilyecommerce.exception.UserAlreadyExistsException;
+import org.example.mobilyecommerce.exception.UserNotFoundException;
 import org.example.mobilyecommerce.model.RefreshToken;
 import org.example.mobilyecommerce.model.Token;
 import org.example.mobilyecommerce.model.User;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -98,6 +100,27 @@ public class AuthService implements AuthServiceInterface {
 
         log.info("🔄 New access token issued for user: {} from IP: {}", user.getUsername(), ip);
         return new AuthResponseVm(newAccessToken, refreshTokenValue);
+    }
+
+    @Override
+    @Transactional
+    public Boolean resetPassword(String username, String newPassword) {
+        // 1️⃣ التحقق من وجود المستخدم
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User with email " + username + " not found"));
+
+        // 2️⃣ منع إعادة استخدام نفس كلمة السر القديمة
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from the old one");
+        }
+
+        // 3️⃣ تشفير كلمة السر الجديدة وتحديثها مباشرة
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // 4️⃣ حفظ التعديل (بسبب @Transactional يكفي التعديل على الكائن فقط)
+        // لا تحتاج إلى userRepository.save(user) هنا إلا لو عندك detached entity
+
+        return true;
     }
 
     @Override

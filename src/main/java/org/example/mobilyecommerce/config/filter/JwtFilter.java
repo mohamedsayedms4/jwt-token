@@ -111,7 +111,8 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        boolean skip = path.contains("/api/auth/login") || path.contains("/api/auth/signup");
+        boolean skip = path.contains("/api/v1/auth/login") || path.contains("/api/v1/auth/signup")
+                || path.contains("/api/v1/auth/reset-password");
         if (skip) {
             log.debug("⚫ Skipping JwtFilter for path {}", path);
         }
