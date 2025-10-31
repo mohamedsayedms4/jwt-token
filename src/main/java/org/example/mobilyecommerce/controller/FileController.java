@@ -34,6 +34,34 @@ public class FileController {
         }
     }
 
+    // 📂 عرض كل الصور الموجودة في مجلد uploads
+    @GetMapping
+    public ResponseEntity<?> listAllFiles() {
+        try {
+            if (!Files.exists(uploadDir)) {
+                return ResponseEntity.ok("No upload directory found!");
+            }
+
+            // جمع أسماء كل الملفات داخل المجلد
+            var files = Files.list(uploadDir)
+                    .filter(Files::isRegularFile)
+                    .map(path -> "/api/files/" + path.getFileName().toString())
+                    .toList();
+
+            if (files.isEmpty()) {
+                return ResponseEntity.ok("No files uploaded yet!");
+            }
+
+            return ResponseEntity.ok(files);
+
+        } catch (IOException e) {
+            log.error("Error listing files: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Could not list files: " + e.getMessage());
+        }
+    }
+
+
     // 🟢 رفع صورة
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
