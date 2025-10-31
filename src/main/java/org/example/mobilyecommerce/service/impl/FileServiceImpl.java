@@ -48,7 +48,7 @@ public class FileServiceImpl implements FileService {
         log.info("File saved: {}", targetLocation);
 
         // ✅ استخدم URL كامل بدل المسار النسبي
-        return "https://api-spring.bigzero.online/api/files" + fileName;
+        return "https://api-spring.bigzero.online/api/files/" + fileName;
     }
 
     @Override
