@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/files")
+@RequestMapping("/api/files")
 @CrossOrigin("*")
 public class FileController {
 
