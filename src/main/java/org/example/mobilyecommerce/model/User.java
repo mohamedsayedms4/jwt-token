@@ -43,7 +43,7 @@ public class User {
     public void prePersist() {
         if (roles == null || roles.isEmpty()) {
             Role role = new Role();
-            role.setRole("ROLE_USER");
+            role.setRole(UserRole.CUSTOMER);
             role.setUser(this);
             roles = new java.util.ArrayList<>();
             roles.add(role);

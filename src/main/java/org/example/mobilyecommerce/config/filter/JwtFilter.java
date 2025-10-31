@@ -93,7 +93,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // Map roles to authorities for Spring Security
         List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().toUpperCase()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole()))
                 .collect(Collectors.toList());
 
         log.debug("🟪 Mapped roles to authorities for user {}: {}", user.getUsername(), authorities);
@@ -112,7 +112,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         boolean skip = path.contains("/api/v1/auth/login") || path.contains("/api/v1/auth/signup")
-                || path.contains("/api/v1/auth/reset-password");
+                || path.contains("/api/v1/auth/reset-password") ;
         if (skip) {
             log.debug("⚫ Skipping JwtFilter for path {}", path);
         }

@@ -3,10 +3,13 @@ package org.example.mobilyecommerce.config;
 import lombok.RequiredArgsConstructor;
 import org.example.mobilyecommerce.config.filter.Bucket4jRateLimitFilter;
 import org.example.mobilyecommerce.config.filter.JwtFilter;
+import org.example.mobilyecommerce.exception.CustomAccessDeniedHandler;
+import org.example.mobilyecommerce.exception.CustomBasicAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,6 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // ✅ مهم جدًا
 @RequiredArgsConstructor
 public class ProjectSecurityConfig {
 
@@ -35,7 +39,7 @@ public class ProjectSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/refresh","/api/v1/auth/reset-password",
-                                "/api/files/**").permitAll()
+                                "/api/files/**","/api/v1/categories/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -44,6 +48,10 @@ public class ProjectSecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable());
 
+        http.exceptionHandling(exceptions ->exceptions.accessDeniedHandler(new CustomAccessDeniedHandler()));
+
+        http.httpBasic(httpSecurityHttpBasicConfigurer ->
+                httpSecurityHttpBasicConfigurer.authenticationEntryPoint(new CustomBasicAuthenticationEntryPoint()));
         return http.build();
     }
 

@@ -15,6 +15,20 @@ import java.time.LocalDateTime;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // ✅ إضافة هذا المعالج الجديد للتعامل مع أخطاء الصلاحيات من @PreAuthorize
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorDetails> handleAuthorizationDenied(
+            AuthorizationDeniedException ex,
+            HttpServletRequest request) {
+
+        log.warn("Authorization Denied: {} for path: {}", ex.getMessage(), request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(buildErrorDetails(request, HttpStatus.FORBIDDEN,
+                        "You don't have permission to access this resource"));
+    }
+
     // validation errors from @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDetails> handleValidationExceptions(
@@ -29,19 +43,7 @@ public class GlobalExceptionHandler {
                 .body(buildErrorDetails(request, HttpStatus.BAD_REQUEST,
                         errorMessage));
     }
-//    @ExceptionHandler(ConstraintViolationException.class)
-//    public ResponseEntity<ErrorDetails> handleConstraintViolation(
-//            ConstraintViolationException ex,
-//            HttpServletRequest request) {
-//
-//        String errorMessage = ex.getConstraintViolations().stream()
-//                .map(cv -> cv.getMessage())
-//                .reduce((m1, m2) -> m1 + "; " + m2)
-//                .orElse("Validation failed");
-//
-//        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-//                .body(buildErrorDetails(request, HttpStatus.BAD_REQUEST, errorMessage));
-//    }
+
     @ExceptionHandler({
             UserAlreadyExistsException.class,
     })
@@ -51,12 +53,12 @@ public class GlobalExceptionHandler {
 
         log.warn("Conflict Exception: {}", ex.getMessage());
 
-
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(buildErrorDetails(request, HttpStatus.CONFLICT, ex.getMessage()));
     }
+
     @ExceptionHandler({
-        TokenNotFoundException.class,
+            TokenNotFoundException.class,
             UserNotFoundException.class
     })
     public ResponseEntity<ErrorDetails> handleNotFoundExceptions(
@@ -64,7 +66,6 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Conflict Exception: {}", ex.getMessage());
-
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(buildErrorDetails(request, HttpStatus.NOT_FOUND, ex.getMessage()));
@@ -83,7 +84,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorDetails(request, HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleAllExceptions(

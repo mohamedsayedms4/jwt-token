@@ -19,7 +19,8 @@ public class Role {
     private Long id;
 
 
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @ToString.Exclude // ⬅️ هذا مهم
