@@ -42,10 +42,12 @@ public class FileController {
                 return ResponseEntity.ok("No upload directory found!");
             }
 
+            String baseUrl = "https://api-spring.bigzero.online/api/files/";
+
             // جمع أسماء كل الملفات داخل المجلد
             var files = Files.list(uploadDir)
                     .filter(Files::isRegularFile)
-                    .map(path -> "/api/files/" + path.getFileName().toString())
+                    .map(path -> baseUrl + path.getFileName().toString())
                     .toList();
 
             if (files.isEmpty()) {
@@ -60,7 +62,6 @@ public class FileController {
                     .body("Could not list files: " + e.getMessage());
         }
     }
-
 
     // 🟢 رفع صورة
     @PostMapping("/upload")
