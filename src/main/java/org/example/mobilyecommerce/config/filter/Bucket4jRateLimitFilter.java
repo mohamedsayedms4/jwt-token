@@ -32,8 +32,8 @@ public class Bucket4jRateLimitFilter extends OncePerRequestFilter {
         Bandwidth limit;
         if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/signup")) {
             // Stricter limit for authentication endpoints
-            Refill refill = Refill.greedy(3, Duration.ofMinutes(10));
-            limit = Bandwidth.classic(3, refill);
+            Refill refill = Refill.greedy(15, Duration.ofMinutes(10));
+            limit = Bandwidth.classic(15, refill);
             log.info("Created login/signup bucket: limit=3 requests per 10 minutes for path {}", path);
         } else {
             // General API endpoints

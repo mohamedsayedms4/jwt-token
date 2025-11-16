@@ -52,7 +52,7 @@ public class AuthController {
         String ip = getClientIp(request);
         String agent = request.getHeader("User-Agent");
 
-        log.info("🔑 Login request from IP: {} for user: {}", ip, login.getUsername());
+        log.info("🔑 Login request from IP: {} for user: {}", ip, login.getEmail());
 
         AuthResponseVm response = authService.login(login, ip, agent);
         return ResponseEntity.ok(response);

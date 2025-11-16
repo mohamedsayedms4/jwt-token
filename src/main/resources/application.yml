@@ -24,7 +24,7 @@ logging:
     org.example.mobilyecommerce: DEBUG
 token:
   secret: FFEvJ($ePwE7ep6L6DRg(Du+U!@a7nh3FY*TTuf7tNIAzEvHjHn8cMD*uc+ENG3r
-  access-time: 5m
+  access-time: 1d
   refresh-time: 10d
 
 #spring:

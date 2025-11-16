@@ -40,9 +40,9 @@ public class AuthService implements AuthServiceInterface {
     @Override
     @Transactional
     public AuthResponseVm signup(User user, String ip, String agent) {
-        log.info("🔐 Signup attempt for username: {} from IP: {}", user.getUsername(), ip);
+        log.info("🔐 Signup attempt for username: {} from IP: {}", user.getEmail(), ip);
 
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             log.warn("⚠️ Username already exists: {}", user.getUsername());
             throw new UserAlreadyExistsException("Username already exists: " + user.getUsername());
         }
@@ -59,17 +59,40 @@ public class AuthService implements AuthServiceInterface {
         return new AuthResponseVm(accessToken, refreshToken.getToken());
     }
 
+//    @Override
+//    @Transactional
+//    public AuthResponseVm login(AuthRequestVm login, String ip, String agent) {
+//        log.info("🔐 Login attempt for username: {} from IP: {}", login.getEmail(), ip);
+//
+//        authenticationManager.authenticate(
+//                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
+//        );
+//
+//
+//        User user = userRepository.findByUsername(login.getEmail())
+//                .orElseThrow(() -> new InvalidCredentialsException("User not found: " + login.getEmail()));
+//
+//        String accessToken = tokenHandler.createAccessToken(user);
+//        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+//
+//        saveAccessToken(user, accessToken, ip, agent);
+//
+//        log.info("✅ User logged in successfully: {} from IP: {}", user.getUsername(), ip);
+//        return new AuthResponseVm(accessToken, refreshToken.getToken());
+//    }
+
     @Override
     @Transactional
     public AuthResponseVm login(AuthRequestVm login, String ip, String agent) {
-        log.info("🔐 Login attempt for username: {} from IP: {}", login.getUsername(), ip);
+        log.info("🔐 Login attempt for username: {} from IP: {}", login.getEmail(), ip);
 
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
+                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
         );
 
-        User user = userRepository.findByUsername(login.getUsername())
-                .orElseThrow(() -> new InvalidCredentialsException("User not found: " + login.getUsername()));
+        // ✅ التعديل: استخدام findByEmail بدلاً من findByUsername
+        User user = userRepository.findByEmail(login.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("User not found: " + login.getEmail()));
 
         String accessToken = tokenHandler.createAccessToken(user);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
