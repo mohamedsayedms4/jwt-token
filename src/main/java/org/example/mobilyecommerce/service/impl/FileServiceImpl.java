@@ -2,78 +2,72 @@ package org.example.mobilyecommerce.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.service.FileService;
-import org.springframework.core.io.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.*;
-import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
-/**
- * Implementation of FileService for handling file upload, retrieval, and deletion.
- */
-@Slf4j
 @Service
+@Slf4j
 public class FileServiceImpl implements FileService {
 
-    private final Path uploadDir = Paths.get("uploads");
+    private final Path fileStorageLocation;
 
-    public FileServiceImpl() {
+    public FileServiceImpl(@Value("${file.upload-dir:uploads}") String uploadDir) {
+        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-                log.info("Created upload directory: {}", uploadDir.toAbsolutePath());
-            }
+            Files.createDirectories(this.fileStorageLocation);
         } catch (IOException e) {
-            throw new RuntimeException("Could not create upload folder!", e);
+            log.error("Could not create upload directory", e);
+            throw new RuntimeException("Could not create upload directory", e);
         }
     }
 
     @Override
     public String uploadFile(MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty!");
+        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        if (originalFileName.contains("..")) {
+            throw new IOException("Filename contains invalid path sequence: " + originalFileName);
         }
 
-        String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
-        String fileName = UUID.randomUUID() + "_" + originalFilename;
-
-        Path targetLocation = this.uploadDir.resolve(fileName);
+        Path targetLocation = this.fileStorageLocation.resolve(originalFileName);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-        log.info("File saved: {}", targetLocation);
-
-        // ✅ استخدم URL كامل بدل المسار النسبي
-        return "https://api-spring.bigzero.online/api/files/" + fileName;
+        // return URL path for access
+        return "/api/files/" + originalFileName;
     }
 
     @Override
     public Resource loadFile(String filename) throws IOException {
         try {
-            Path filePath = uploadDir.resolve(filename).normalize();
+            Path filePath = this.fileStorageLocation.resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
-
-            if (!resource.exists()) {
-                throw new NoSuchFileException("File not found: " + filename);
+            if (resource.exists()) {
+                return resource;
+            } else {
+                throw new IOException("File not found: " + filename);
             }
-
-            return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Invalid file path: " + filename, e);
+            throw new IOException("File path is invalid: " + filename, e);
         }
     }
 
     @Override
     public boolean deleteFile(String filename) {
         try {
-            Path filePath = uploadDir.resolve(filename).normalize();
+            Path filePath = this.fileStorageLocation.resolve(filename).normalize();
             return Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            log.error("Error deleting file: {}", filename, e);
+            log.error("Failed to delete file: {}", filename, e);
             return false;
         }
     }
