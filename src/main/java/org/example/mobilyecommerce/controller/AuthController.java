@@ -126,38 +126,7 @@ public class AuthController {
         ));
     }
 
-    /**
-     * ✅ معلومات عن التوكنات (للتشخيص والاختبار)
-     */
-    @GetMapping("/token-info")
-    public ResponseEntity<Map<String, String>> tokenInfo() {
-        return ResponseEntity.ok(Map.of(
-                "accessTokenDuration", "30 minutes",
-                "refreshTokenDuration", "10 days",
-                "note", "Access token expires after 30 minutes, use refresh token to get a new one"
-        ));
-    }
 
-    /**
-     * ✅ اختبار IP - للتأكد من أن IP يتم استخراجه بشكل صحيح
-     */
-    @GetMapping("/test-ip")
-    public ResponseEntity<Map<String, String>> testIp(HttpServletRequest request) {
-        String ip = getClientIp(request);
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        String xRealIp = request.getHeader("X-Real-IP");
-        String remoteAddr = request.getRemoteAddr();
-
-        log.info("🧪 IP Test - Final: {}, X-Forwarded-For: {}, X-Real-IP: {}, Remote: {}",
-                ip, xForwardedFor, xRealIp, remoteAddr);
-
-        return ResponseEntity.ok(Map.of(
-                "extractedIp", ip != null ? ip : "null",
-                "xForwardedFor", xForwardedFor != null ? xForwardedFor : "null",
-                "xRealIp", xRealIp != null ? xRealIp : "null",
-                "remoteAddr", remoteAddr != null ? remoteAddr : "null"
-        ));
-    }
 
 
     @PostMapping("/reset-password")

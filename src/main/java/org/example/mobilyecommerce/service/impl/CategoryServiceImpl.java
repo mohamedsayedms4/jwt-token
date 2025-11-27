@@ -73,7 +73,23 @@ public class CategoryServiceImpl implements CategoryService {
                 // update image if new one provided
                 if (icon != null && !icon.isEmpty()) {
                     if (existing.getImageUrl() != null) {
-                        String oldFileName = existing.getImageUrl().replace("/api/files/", "");
+                        // Extract filename from URL properly
+                        String imageUrl = existing.getImageUrl();
+                        String oldFileName;
+
+                        // Check if it's a relative path starting with /api/files/
+                        if (imageUrl.startsWith("/api/files/")) {
+                            oldFileName = imageUrl.replace("/api/files/", "");
+                        }
+                        // Check if it's a full URL
+                        else if (imageUrl.contains("/api/files/")) {
+                            oldFileName = imageUrl.substring(imageUrl.lastIndexOf("/api/files/") + 11);
+                        }
+                        // Otherwise just extract the filename from the end
+                        else {
+                            oldFileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+                        }
+
                         fileService.deleteFile(oldFileName);
                     }
                     String newUrl = fileService.uploadFile(icon);
@@ -96,7 +112,22 @@ public class CategoryServiceImpl implements CategoryService {
             try {
                 // delete image if exists
                 if (category.getImageUrl() != null) {
-                    String fileName = category.getImageUrl().replace("/api/files/", "");
+                    String imageUrl = category.getImageUrl();
+                    String fileName;
+
+                    // Check if it's a relative path starting with /api/files/
+                    if (imageUrl.startsWith("/api/files/")) {
+                        fileName = imageUrl.replace("/api/files/", "");
+                    }
+                    // Check if it's a full URL
+                    else if (imageUrl.contains("/api/files/")) {
+                        fileName = imageUrl.substring(imageUrl.lastIndexOf("/api/files/") + 11);
+                    }
+                    // Otherwise just extract the filename from the end
+                    else {
+                        fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+                    }
+
                     fileService.deleteFile(fileName);
                 }
                 categoryRepository.delete(category);

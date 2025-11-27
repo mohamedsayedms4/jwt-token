@@ -2,7 +2,6 @@ package org.example.mobilyecommerce.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.service.FileService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -20,10 +19,15 @@ import java.nio.file.StandardCopyOption;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
-    private final Path fileStorageLocation;
+    // مسار حفظ الصور في السيرفر
+    private final Path fileStorageLocation = Paths.get("/root/bigzero-image")
+            .toAbsolutePath()
+            .normalize();
 
-    public FileServiceImpl(@Value("${file.upload-dir:uploads}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+    // رابط موقع الـ Backend
+    private final String BASE_URL = "https://api-spring.bigzero.online";
+
+    public FileServiceImpl() {
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (IOException e) {
@@ -35,6 +39,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public String uploadFile(MultipartFile file) throws IOException {
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+
         if (originalFileName.contains("..")) {
             throw new IOException("Filename contains invalid path sequence: " + originalFileName);
         }
@@ -42,8 +47,8 @@ public class FileServiceImpl implements FileService {
         Path targetLocation = this.fileStorageLocation.resolve(originalFileName);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-        // return URL path for access
-        return "/api/files/" + originalFileName;
+        // إرجاع URL كامل قابل للوصول من React أو أي Frontend
+        return BASE_URL + "/api/files/" + originalFileName;
     }
 
     @Override
@@ -51,11 +56,13 @@ public class FileServiceImpl implements FileService {
         try {
             Path filePath = this.fileStorageLocation.resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
+
             if (resource.exists()) {
                 return resource;
             } else {
                 throw new IOException("File not found: " + filename);
             }
+
         } catch (MalformedURLException e) {
             throw new IOException("File path is invalid: " + filename, e);
         }
@@ -66,6 +73,7 @@ public class FileServiceImpl implements FileService {
         try {
             Path filePath = this.fileStorageLocation.resolve(filename).normalize();
             return Files.deleteIfExists(filePath);
+
         } catch (IOException e) {
             log.error("Failed to delete file: {}", filename, e);
             return false;
