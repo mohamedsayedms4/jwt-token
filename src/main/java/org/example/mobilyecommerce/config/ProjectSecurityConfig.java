@@ -64,7 +64,7 @@ public class ProjectSecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // Allow only frontend domain
-        config.setAllowedOrigins(List.of("https://bigzero.online", "https://www.bigzero.online","http://127.0.0.1:5500","http://localhost:5173"));
+        config.setAllowedOrigins(List.of("https://bigzero.online", "https://www.bigzero.online","http://127.0.0.1:5500","http://localhost:5173","https://admin.bigzero.online"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
         config.setAllowCredentials(true);
