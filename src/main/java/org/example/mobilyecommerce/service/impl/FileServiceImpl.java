@@ -20,7 +20,7 @@ import java.nio.file.StandardCopyOption;
 public class FileServiceImpl implements FileService {
 
     // مسار حفظ الصور في السيرفر
-    private final Path fileStorageLocation = Paths.get("/root/bigzero-image")
+    private final Path fileStorageLocation = Paths.get("/var/www/bigzero-image")
             .toAbsolutePath()
             .normalize();
 

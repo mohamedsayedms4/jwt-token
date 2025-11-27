@@ -22,7 +22,7 @@ import java.util.UUID;
 @CrossOrigin("*")
 public class FileController {
 
-    private final Path uploadDir = Paths.get("uploads");
+    private final Path uploadDir = Paths.get("/var/www/bigzero-image");
 
     public FileController() {
         try {
