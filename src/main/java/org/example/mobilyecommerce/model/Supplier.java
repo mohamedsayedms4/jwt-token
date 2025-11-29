@@ -1,5 +1,6 @@
 package org.example.mobilyecommerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,8 +44,8 @@ public class Supplier {
     @Column(nullable = false)
     private double totalDue = 0.0;        // المبلغ المتبقي للمورد (لو فيه ديون أو فلوس لسه ما اتدفعتش)
 
-    // العلاقة بين المورد والفواتير
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference   // هنا نحدد أن هذه الجهة هي الأصل
-    private List<SupplierInvoice> invoices; // قائمة الفواتير الخاصة بالمورد
+    @OneToMany(mappedBy = "supplier")
+    @JsonIgnoreProperties("supplier")
+    private List<SupplierInvoice> invoices;
+
 }

@@ -1,6 +1,7 @@
 package org.example.mobilyecommerce.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -27,9 +28,10 @@ public class SupplierInvoice {
     private String notes;          // ملاحظات إضافية (زي رقم إيصال أو خصم)
 
     @ManyToOne
-    @JoinColumn(name = "supplier_id", nullable = false)
-    @JsonBackReference    // هذه الجهة تمنع الـ loop عند JSON
+    @JoinColumn(name = "supplier_id")
+    @JsonIgnoreProperties("invoices")
     private Supplier supplier;
+
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

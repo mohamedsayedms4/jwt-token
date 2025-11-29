@@ -40,7 +40,8 @@ public class ProjectSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/refresh","/api/v1/auth/reset-password",
                                 "/api/files/**","/api/v1/categories/**",
-                                "/api/v1/products/**","/api/invoices","/api/suppliers").permitAll()
+                                "/api/v1/products/**").permitAll()
+                        .requestMatchers("/api/invoices","/api/suppliers").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
