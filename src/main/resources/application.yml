@@ -27,6 +27,11 @@ token:
   access-time: 1d
   refresh-time: 10d
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
 #spring:
 #  application:
 #    name: mobily-ecommerce
