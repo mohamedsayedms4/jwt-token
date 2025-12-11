@@ -40,7 +40,7 @@ public class ProjectSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/signup", "/api/v1/auth/refresh","/api/v1/auth/reset-password",
                                 "/api/files/**","/api/v1/categories/**",
-                                "/api/v1/products/**","/api/v1/home/**").permitAll()
+                                "/api/v1/products/**","/api/v1/home/**","/api/v1/branding/**").permitAll()
                         .requestMatchers("/api/invoices","/api/suppliers").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
