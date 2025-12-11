@@ -3,6 +3,7 @@ package org.example.mobilyecommerce.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.mobilyecommerce.model.Icons;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class ProductDto {
     private Long viewsCounter;
     private Long searchCounter;
     private List<String> images;
-    private Boolean isVerified; // لو عندك في قاعدة البيانات عمود للتحقق مثلاً
+    private Boolean isVerified;
+    private Icons icons;
 
 }

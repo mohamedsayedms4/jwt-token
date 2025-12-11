@@ -24,9 +24,8 @@ public class Product extends BaseEntity {
     @Column(nullable = false,columnDefinition= "NVARCHAR(100)")
     private String description;
 
-//    سعر الشراء
     private Long purchasPrice;
-//    سعر البيع
+
     private Long sellingPrice;
 
     @Min(0)
@@ -50,7 +49,7 @@ public class Product extends BaseEntity {
 
     private Long viewsCounter = 0L;
 
-    private Long searchCounter = 0L; // صححت الاسم
+    private Long searchCounter = 0L;
 
 
     @ElementCollection
@@ -60,5 +59,10 @@ public class Product extends BaseEntity {
     )
     @Column(name = "image_url")
     private List<String> images = new ArrayList<>();
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "icons_id", referencedColumnName = "id")
+    private Icons icons;
+
 
 }
