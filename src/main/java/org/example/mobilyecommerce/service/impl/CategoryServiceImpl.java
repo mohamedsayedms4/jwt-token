@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -148,5 +149,11 @@ public class CategoryServiceImpl implements CategoryService {
     public List<CategoryDto> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return categoryMapper.toDtoList(categories);
+    }
+
+    @Override
+    public List<CategoryDto> getRootCategories() {
+        // دي هترجع root categories مع كل children جوههم
+        return categoryRepository.findByParentCategoryIsNull().stream().map(categoryMapper::toDto).collect(Collectors.toList());
     }
 }

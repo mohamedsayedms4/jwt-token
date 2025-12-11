@@ -2,6 +2,7 @@ package org.example.mobilyecommerce.service;
 
 
 import org.example.mobilyecommerce.dto.CategoryDto;
+import org.example.mobilyecommerce.model.Category;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,4 +62,6 @@ public interface CategoryService {
      * @return list of root categories with their children populated
      */
     List<CategoryDto> getAllCategories();
+
+    List<CategoryDto> getRootCategories();
 }

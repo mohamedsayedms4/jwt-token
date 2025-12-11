@@ -85,4 +85,10 @@ public class CategoryController {
     public ResponseEntity<List<CategoryDto>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
+
+    @GetMapping("/root")
+    public ResponseEntity<List<CategoryDto>> getRootCategories() {
+        return ResponseEntity.ok(categoryService.getRootCategories());
+    }
+
 }

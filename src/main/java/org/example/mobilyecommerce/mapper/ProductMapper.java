@@ -7,6 +7,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ProductMapper {
 
+    @Mapping(target = "categoryId", source = "category.id")
     ProductDto toDto(Product product);
 
     @Mapping(target = "category.id", source = "categoryId")
