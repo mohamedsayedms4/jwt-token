@@ -64,5 +64,18 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "icons_id", referencedColumnName = "id")
     private Icons icons;
 
+    @ElementCollection
+    @CollectionTable(
+            name = "product_images_details",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
+    private List<String> imagesDetails = new ArrayList<>();
 
+
+    @ElementCollection
+    @CollectionTable(
+            name = "product_details",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
+    private List<ProductDetails> productDetails ;
 }

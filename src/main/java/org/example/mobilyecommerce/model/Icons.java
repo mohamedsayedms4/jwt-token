@@ -25,4 +25,6 @@ public class Icons extends BaseEntity{
     )
     private List<IconDetail> icons;
 
+
+
 }

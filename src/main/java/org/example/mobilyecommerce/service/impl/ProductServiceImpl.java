@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.example.mobilyecommerce.dto.ProductDto;
 import org.example.mobilyecommerce.mapper.ProductMapper;
 import org.example.mobilyecommerce.model.Category;
+import org.example.mobilyecommerce.model.Icons;
 import org.example.mobilyecommerce.model.Product;
 import org.example.mobilyecommerce.repository.CategoryRepository;
+import org.example.mobilyecommerce.repository.IconsRepository;
 import org.example.mobilyecommerce.repository.ProductRepository;
 import org.example.mobilyecommerce.service.FileService;
 import org.example.mobilyecommerce.service.ProductService;
@@ -27,20 +29,28 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
     private final FileService fileService;
+    private final IconsRepository iconsRepository;
 
     @Override
-    public Optional<ProductDto> insert(ProductDto productDto, List<MultipartFile> images) {
+    public Optional<ProductDto> insert(ProductDto productDto, List<MultipartFile> images , List<MultipartFile> imagesDetails) {
         Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
         Product product = productMapper.toEntity(productDto);
-        product.setId(null); // ✅ مهم جداً: تأكد أنه منتج جديد
+        product.setId(null);
         product.setCategory(category);
-
-        // ✅ حفظ الصور إن وُجدت
+        if (productDto.getIconsId() != null) {
+            Icons icons = iconsRepository.findById(productDto.getIconsId())
+                    .orElseThrow(() -> new RuntimeException("Icons not found"));
+            product.setIcons(icons);
+        }
         if (images != null && !images.isEmpty()) {
             List<String> uploadedUrls = uploadImages(images);
             product.setImages(uploadedUrls);
+        }
+        if (imagesDetails != null && !imagesDetails.isEmpty()) {
+            List<String> uploadedUrls = uploadImages(imagesDetails);
+            product.setImagesDetails(uploadedUrls);
         }
 
         Product saved = productRepository.save(product);

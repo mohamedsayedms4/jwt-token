@@ -31,9 +31,11 @@ public class ProductController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> createProduct(
             @RequestPart("product") ProductDto productDto,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestPart(value = "product_images_details", required = false) List<MultipartFile> imagesDetails
+
     ) {
-        Optional<ProductDto> saved = productService.insert(productDto, images);
+        Optional<ProductDto> saved = productService.insert(productDto, images , imagesDetails);
         return saved.<ResponseEntity<Object>>map(dto ->
                         ResponseEntity.status(HttpStatus.CREATED).body(dto))
                 .orElseGet(() ->

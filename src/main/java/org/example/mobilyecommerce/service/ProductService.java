@@ -12,8 +12,7 @@ import java.util.Optional;
 public interface ProductService {
 
     Optional<ProductDto> insert(
-            ProductDto  productDto ,
-                                      List<MultipartFile> images);
+            ProductDto  productDto , List<MultipartFile> images , List<MultipartFile> imagesDetails);
 
     Optional<ProductDto> findById(Long id);
 

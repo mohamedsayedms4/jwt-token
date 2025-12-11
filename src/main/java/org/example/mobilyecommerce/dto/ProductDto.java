@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.mobilyecommerce.model.Icons;
+import org.example.mobilyecommerce.model.ProductDetails;
 
 import java.util.List;
 
@@ -25,6 +26,9 @@ public class ProductDto {
     private Long searchCounter;
     private List<String> images;
     private Boolean isVerified;
-    private Icons icons;
+    private Long iconsId;
+    private List<String> imagesDetails;
+    private List<ProductDetails> productDetails;
+
 
 }
