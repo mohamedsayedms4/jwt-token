@@ -6,8 +6,11 @@ import org.example.mobilyecommerce.mapper.BrandingInfoMapper;
 import org.example.mobilyecommerce.model.BrandingInfo;
 import org.example.mobilyecommerce.repository.BrandingInfoRepository;
 import org.example.mobilyecommerce.service.BrandingInfoService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class BrandingInfoServiceImpl implements BrandingInfoService {
@@ -16,19 +19,24 @@ public class BrandingInfoServiceImpl implements BrandingInfoService {
     private final BrandingInfoMapper mapper;
 
     @Override
+    @Cacheable(value = "brandingInfo", key = "'singleton'")
     public BrandingInfoDto getBrandingInfo() {
-        BrandingInfoDto info = repository.findById(1L).map(mapper::toDto).orElse(null);
-        return info;
+        return repository.findById(1L)
+                .map(mapper::toDto)
+                .orElse(null);
     }
 
     @Override
-    public BrandingInfoDto save(BrandingInfoDto dto){
+    @CacheEvict(value = "brandingInfo", allEntries = true)
+    public BrandingInfoDto save(BrandingInfoDto dto) {
         BrandingInfo info = mapper.toEntity(dto);
         BrandingInfo saved = repository.save(info);
         return mapper.toDto(saved);
     }
+
     @Override
     @Transactional
+    @CacheEvict(value = "brandingInfo", allEntries = true)
     public BrandingInfoDto updateBrandingInfo(BrandingInfoDto dto) {
         BrandingInfo info = repository.findById(1L)
                 .orElseThrow(() -> new RuntimeException("Branding info not found"));
@@ -39,13 +47,12 @@ public class BrandingInfoServiceImpl implements BrandingInfoService {
         info.setInstagramLink(dto.instagramLink());
         info.setWhatsappLink(dto.whatsappLink());
         info.setTiktokLink(dto.tiktokLink());
-        info.setPhoneNumber(dto.phoneNumber()); // assuming it's already String
+        info.setPhoneNumber(dto.phoneNumber());
         info.setEmail(dto.email());
         info.setAddress(dto.address());
 
         repository.save(info);
 
-        // Return updated DTO
         return new BrandingInfoDto(
                 info.getId(),
                 info.getBrandName(),
@@ -59,11 +66,4 @@ public class BrandingInfoServiceImpl implements BrandingInfoService {
                 info.getAddress()
         );
     }
-
-
-    /**
-     * Fetch the branding info singleton.
-     * If it doesn't exist, create it with ID = 1.
-     */
-
 }

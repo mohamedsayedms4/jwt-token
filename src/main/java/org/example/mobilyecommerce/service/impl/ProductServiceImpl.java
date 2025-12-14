@@ -12,6 +12,9 @@ import org.example.mobilyecommerce.repository.ProductRepository;
 import org.example.mobilyecommerce.service.CategoryService;
 import org.example.mobilyecommerce.service.FileService;
 import org.example.mobilyecommerce.service.ProductService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,22 +38,33 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryService categoryService;
 
     @Override
-    public Optional<ProductDto> insert(ProductDto productDto, List<MultipartFile> images , List<MultipartFile> imagesDetails) {
+    @Caching(evict = {
+            @CacheEvict(value = "products", allEntries = true),
+            @CacheEvict(value = "productsByCategory", allEntries = true),
+            @CacheEvict(value = "productsByParentCategory", allEntries = true),
+            @CacheEvict(value = "latestProducts", allEntries = true),
+            @CacheEvict(value = "topViewedProducts", allEntries = true),
+            @CacheEvict(value = "topSearchedProducts", allEntries = true)
+    })
+    public Optional<ProductDto> insert(ProductDto productDto, List<MultipartFile> images, List<MultipartFile> imagesDetails) {
         Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
         Product product = productMapper.toEntity(productDto);
         product.setId(null);
         product.setCategory(category);
+
         if (productDto.getIconsId() != null) {
             Icons icons = iconsRepository.findById(productDto.getIconsId())
                     .orElseThrow(() -> new RuntimeException("Icons not found"));
             product.setIcons(icons);
         }
+
         if (images != null && !images.isEmpty()) {
             List<String> uploadedUrls = uploadImages(images);
             product.setImages(uploadedUrls);
         }
+
         if (imagesDetails != null && !imagesDetails.isEmpty()) {
             List<String> uploadedUrls = uploadImages(imagesDetails);
             product.setImagesDetails(uploadedUrls);
@@ -62,42 +75,53 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "product", key = "#id")
     public Optional<ProductDto> findById(Long id) {
         return productRepository.findById(id)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ProductDto> getProducts(Pageable pageable) {
         return productRepository.findAll(pageable)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "productsByCategory", key = "#categoryId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ProductDto> findByCategoryId(Long categoryId, Pageable pageable) {
         return productRepository.findByCategoryId(categoryId, pageable)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "topViewedProducts", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ProductDto> findByViewsCounter(Pageable pageable) {
         return productRepository.findByViewsCounterGreaterThanOrderByViewsCounterDesc(0L, pageable)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "topSearchedProducts", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ProductDto> findBySearchCounter(Pageable pageable) {
         return productRepository.findBySearchCounterGreaterThanOrderBySearchCounterDesc(0L, pageable)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "productsByVerification", key = "#isVerified + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ProductDto> findByIsVerified(Boolean isVerified, Pageable pageable) {
         return productRepository.findByIsVerified(isVerified, pageable)
                 .map(productMapper::toDto);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "product", key = "#id"),
+            @CacheEvict(value = "products", allEntries = true),
+            @CacheEvict(value = "productsByVerification", allEntries = true)
+    })
     public boolean updateProductStatus(Long id, boolean status) {
         return productRepository.findById(id).map(product -> {
             product.setIsVerified(status);
@@ -107,6 +131,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "product", key = "#id"),
+            @CacheEvict(value = "products", allEntries = true),
+            @CacheEvict(value = "productsByCategory", allEntries = true),
+            @CacheEvict(value = "productsByParentCategory", allEntries = true),
+            @CacheEvict(value = "latestProducts", allEntries = true)
+    })
     public Optional<ProductDto> updateProduct(Long id, ProductDto dto) {
         return productRepository.findById(id).map(product -> {
             product.setTitle(dto.getTitle());
@@ -117,7 +148,6 @@ public class ProductServiceImpl implements ProductService {
             product.setQuantity(dto.getQuantity());
             product.setColor(dto.getColor());
 
-            // تحديث الصور لو أرسلت جديدة
             if (dto.getImages() != null && !dto.getImages().isEmpty()) {
                 product.setImages(dto.getImages());
             }
@@ -128,9 +158,17 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "product", key = "#id"),
+            @CacheEvict(value = "products", allEntries = true),
+            @CacheEvict(value = "productsByCategory", allEntries = true),
+            @CacheEvict(value = "productsByParentCategory", allEntries = true),
+            @CacheEvict(value = "latestProducts", allEntries = true),
+            @CacheEvict(value = "topViewedProducts", allEntries = true),
+            @CacheEvict(value = "topSearchedProducts", allEntries = true)
+    })
     public void deleteProduct(Long id) {
         productRepository.findById(id).ifPresent(product -> {
-            // حذف الصور من السيرفر قبل حذف المنتج
             if (product.getImages() != null) {
                 product.getImages().forEach(fileService::deleteFile);
             }
@@ -138,22 +176,8 @@ public class ProductServiceImpl implements ProductService {
         });
     }
 
-    // 🔹 ميثود مساعدة لرفع الصور
-    private List<String> uploadImages(List<MultipartFile> images) {
-        List<String> urls = new ArrayList<>();
-        for (MultipartFile file : images) {
-            try {
-                String url = fileService.uploadFile(file);
-                urls.add(url);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to upload image: " + file.getOriginalFilename(), e);
-            }
-        }
-        return urls;
-    }
-
-
     @Override
+    @Cacheable(value = "productsByCategory", key = "#categoryId + '-' + #page + '-' + #size")
     public Page<ProductDto> getProductsByCategory(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Product> productsPage = productRepository.findByCategoryId(categoryId, pageable);
@@ -177,13 +201,14 @@ public class ProductServiceImpl implements ProductService {
                 product.getProductDetails()
         ));
     }
+
     @Override
+    @Cacheable(value = "productsByParentCategory", key = "#parentCategoryId + '-' + #page + '-' + #size")
     public Page<ProductDto> getProductsByParentCategory(Long parentCategoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
-        // جلب كل الفئات الفرعية recursively
         List<Long> categoryIds = categoryService.getAllChildCategoryIds(parentCategoryId);
-        categoryIds.add(parentCategoryId); // نضيف الأب نفسه
+        categoryIds.add(parentCategoryId);
 
         Page<Product> productsPage = productRepository.findByCategoryIdIn(categoryIds, pageable);
 
@@ -208,13 +233,24 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "latestProducts", key = "#page + '-' + #size")
     public Page<ProductDto> getLatestProduct(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-
-        Page<Product> products =
-                productRepository.findAllByOrderByCreatedAtDesc(pageable);
-
+        Page<Product> products = productRepository.findAllByOrderByCreatedAtDesc(pageable);
         return products.map(productMapper::toDto);
     }
 
+    // Helper method
+    private List<String> uploadImages(List<MultipartFile> images) {
+        List<String> urls = new ArrayList<>();
+        for (MultipartFile file : images) {
+            try {
+                String url = fileService.uploadFile(file);
+                urls.add(url);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload image: " + file.getOriginalFilename(), e);
+            }
+        }
+        return urls;
+    }
 }

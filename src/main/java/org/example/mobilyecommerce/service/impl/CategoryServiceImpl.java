@@ -8,6 +8,9 @@ import org.example.mobilyecommerce.model.Category;
 import org.example.mobilyecommerce.repository.CategoryRepository;
 import org.example.mobilyecommerce.service.CategoryService;
 import org.example.mobilyecommerce.service.FileService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +30,11 @@ public class CategoryServiceImpl implements CategoryService {
     private final FileService fileService;
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "rootCategories", allEntries = true),
+            @CacheEvict(value = "childCategoryIds", allEntries = true)
+    })
     public Optional<CategoryDto> createCategory(CategoryDto categoryDto, MultipartFile icon) {
         try {
             Category category = categoryMapper.toEntity(categoryDto);
@@ -55,6 +63,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "category", key = "#id"),
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "rootCategories", allEntries = true),
+            @CacheEvict(value = "childCategoryIds", allEntries = true)
+    })
     public Optional<CategoryDto> updateCategory(Long id, CategoryDto categoryDto, MultipartFile icon) {
         return categoryRepository.findById(id).map(existing -> {
             try {
@@ -75,23 +89,7 @@ public class CategoryServiceImpl implements CategoryService {
                 // update image if new one provided
                 if (icon != null && !icon.isEmpty()) {
                     if (existing.getImageUrl() != null) {
-                        // Extract filename from URL properly
-                        String imageUrl = existing.getImageUrl();
-                        String oldFileName;
-
-                        // Check if it's a relative path starting with /api/files/
-                        if (imageUrl.startsWith("/api/files/")) {
-                            oldFileName = imageUrl.replace("/api/files/", "");
-                        }
-                        // Check if it's a full URL
-                        else if (imageUrl.contains("/api/files/")) {
-                            oldFileName = imageUrl.substring(imageUrl.lastIndexOf("/api/files/") + 11);
-                        }
-                        // Otherwise just extract the filename from the end
-                        else {
-                            oldFileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-                        }
-
+                        String oldFileName = extractFileName(existing.getImageUrl());
                         fileService.deleteFile(oldFileName);
                     }
                     String newUrl = fileService.uploadFile(icon);
@@ -109,27 +107,18 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "category", key = "#id"),
+            @CacheEvict(value = "categories", allEntries = true),
+            @CacheEvict(value = "rootCategories", allEntries = true),
+            @CacheEvict(value = "childCategoryIds", allEntries = true)
+    })
     public Boolean deleteCategory(Long id) {
         return categoryRepository.findById(id).map(category -> {
             try {
                 // delete image if exists
                 if (category.getImageUrl() != null) {
-                    String imageUrl = category.getImageUrl();
-                    String fileName;
-
-                    // Check if it's a relative path starting with /api/files/
-                    if (imageUrl.startsWith("/api/files/")) {
-                        fileName = imageUrl.replace("/api/files/", "");
-                    }
-                    // Check if it's a full URL
-                    else if (imageUrl.contains("/api/files/")) {
-                        fileName = imageUrl.substring(imageUrl.lastIndexOf("/api/files/") + 11);
-                    }
-                    // Otherwise just extract the filename from the end
-                    else {
-                        fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-                    }
-
+                    String fileName = extractFileName(category.getImageUrl());
                     fileService.deleteFile(fileName);
                 }
                 categoryRepository.delete(category);
@@ -142,22 +131,27 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Cacheable(value = "category", key = "#id")
     public Optional<CategoryDto> getCategory(Long id) {
         return categoryRepository.findById(id).map(categoryMapper::toDto);
     }
 
     @Override
+    @Cacheable(value = "categories")
     public List<CategoryDto> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return categoryMapper.toDtoList(categories);
     }
 
     @Override
+    @Cacheable(value = "rootCategories")
     public List<CategoryDto> getRootCategories() {
-        // دي هترجع root categories مع كل children جوههم
-        return categoryRepository.findByParentCategoryIsNull().stream().map(categoryMapper::toDto).collect(Collectors.toList());
+        return categoryRepository.findByParentCategoryIsNull().stream()
+                .map(categoryMapper::toDto)
+                .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "childCategoryIds", key = "#parentId")
     public List<Long> getAllChildCategoryIds(Long parentId) {
         List<Long> ids = new ArrayList<>();
         List<Category> children = categoryRepository.findByParentCategoryId(parentId);
@@ -168,5 +162,14 @@ public class CategoryServiceImpl implements CategoryService {
         return ids;
     }
 
-
+    // Helper method to extract filename from URL
+    private String extractFileName(String imageUrl) {
+        if (imageUrl.startsWith("/api/files/")) {
+            return imageUrl.replace("/api/files/", "");
+        } else if (imageUrl.contains("/api/files/")) {
+            return imageUrl.substring(imageUrl.lastIndexOf("/api/files/") + 11);
+        } else {
+            return imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+        }
+    }
 }
