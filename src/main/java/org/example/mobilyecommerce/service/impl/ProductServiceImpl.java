@@ -207,4 +207,14 @@ public class ProductServiceImpl implements ProductService {
         ));
     }
 
+    @Override
+    public Page<ProductDto> getLatestProduct(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Product> products =
+                productRepository.findAllByOrderByCreatedAtDesc(pageable);
+
+        return products.map(productMapper::toDto);
+    }
+
 }

@@ -14,5 +14,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findBySearchCounterGreaterThanOrderBySearchCounterDesc(Long minSearch, Pageable pageable);
     Page<Product> findByIsVerified(Boolean isVerified, Pageable pageable);
     Page<Product> findByCategoryIdIn(List<Long> categoryIds, Pageable pageable);
+    Page<Product> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
 
 }

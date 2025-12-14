@@ -126,5 +126,12 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<Page<ProductDto>> getLatestProducts( @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "10") int size){
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(productService.getLatestProduct(page,size));
+    }
+
 
 }

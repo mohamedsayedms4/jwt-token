@@ -40,4 +40,5 @@ public interface ProductService {
     Page<ProductDto> getProductsByParentCategory(Long parentCategoryId, int page, int size);
 
 
+    Page<ProductDto> getLatestProduct(int page, int size);
 }
