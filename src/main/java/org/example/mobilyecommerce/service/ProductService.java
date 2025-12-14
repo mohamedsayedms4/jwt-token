@@ -36,4 +36,8 @@ public interface ProductService {
 
     void deleteProduct(Long id);
 
+    Page<ProductDto> getProductsByCategory(Long categoryId, int page, int size);
+    Page<ProductDto> getProductsByParentCategory(Long parentCategoryId, int page, int size);
+
+
 }

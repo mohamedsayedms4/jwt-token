@@ -9,9 +9,11 @@ import org.example.mobilyecommerce.model.Product;
 import org.example.mobilyecommerce.repository.CategoryRepository;
 import org.example.mobilyecommerce.repository.IconsRepository;
 import org.example.mobilyecommerce.repository.ProductRepository;
+import org.example.mobilyecommerce.service.CategoryService;
 import org.example.mobilyecommerce.service.FileService;
 import org.example.mobilyecommerce.service.ProductService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
     private final FileService fileService;
     private final IconsRepository iconsRepository;
+    private final CategoryService categoryService;
 
     @Override
     public Optional<ProductDto> insert(ProductDto productDto, List<MultipartFile> images , List<MultipartFile> imagesDetails) {
@@ -147,4 +151,60 @@ public class ProductServiceImpl implements ProductService {
         }
         return urls;
     }
+
+
+    @Override
+    public Page<ProductDto> getProductsByCategory(Long categoryId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> productsPage = productRepository.findByCategoryId(categoryId, pageable);
+
+        return productsPage.map(product -> new ProductDto(
+                product.getId(),
+                product.getTitle(),
+                product.getDescription(),
+                product.getPurchasPrice(),
+                product.getSellingPrice(),
+                product.getDiscountPercentage(),
+                product.getQuantity(),
+                product.getColor(),
+                product.getCategory().getId(),
+                product.getViewsCounter(),
+                product.getSearchCounter(),
+                product.getImages(),
+                product.getIsVerified(),
+                product.getIcons() != null ? product.getIcons().getId() : null,
+                product.getImagesDetails(),
+                product.getProductDetails()
+        ));
+    }
+    @Override
+    public Page<ProductDto> getProductsByParentCategory(Long parentCategoryId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // جلب كل الفئات الفرعية recursively
+        List<Long> categoryIds = categoryService.getAllChildCategoryIds(parentCategoryId);
+        categoryIds.add(parentCategoryId); // نضيف الأب نفسه
+
+        Page<Product> productsPage = productRepository.findByCategoryIdIn(categoryIds, pageable);
+
+        return productsPage.map(product -> new ProductDto(
+                product.getId(),
+                product.getTitle(),
+                product.getDescription(),
+                product.getPurchasPrice(),
+                product.getSellingPrice(),
+                product.getDiscountPercentage(),
+                product.getQuantity(),
+                product.getColor(),
+                product.getCategory().getId(),
+                product.getViewsCounter(),
+                product.getSearchCounter(),
+                product.getImages(),
+                product.getIsVerified(),
+                product.getIcons() != null ? product.getIcons().getId() : null,
+                product.getImagesDetails(),
+                product.getProductDetails()
+        ));
+    }
+
 }

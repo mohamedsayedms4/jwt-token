@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -156,4 +157,16 @@ public class CategoryServiceImpl implements CategoryService {
         // دي هترجع root categories مع كل children جوههم
         return categoryRepository.findByParentCategoryIsNull().stream().map(categoryMapper::toDto).collect(Collectors.toList());
     }
+
+    public List<Long> getAllChildCategoryIds(Long parentId) {
+        List<Long> ids = new ArrayList<>();
+        List<Category> children = categoryRepository.findByParentCategoryId(parentId);
+        for (Category child : children) {
+            ids.add(child.getId());
+            ids.addAll(getAllChildCategoryIds(child.getId())); // recursion
+        }
+        return ids;
+    }
+
+
 }

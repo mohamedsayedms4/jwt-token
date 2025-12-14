@@ -64,4 +64,6 @@ public interface CategoryService {
     List<CategoryDto> getAllCategories();
 
     List<CategoryDto> getRootCategories();
+
+    List<Long> getAllChildCategoryIds(Long parentId);
 }

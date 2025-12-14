@@ -5,11 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
     Page<Product> findByViewsCounterGreaterThanOrderByViewsCounterDesc(Long minViews, Pageable pageable);
     Page<Product> findBySearchCounterGreaterThanOrderBySearchCounterDesc(Long minSearch, Pageable pageable);
     Page<Product> findByIsVerified(Boolean isVerified, Pageable pageable);
+    Page<Product> findByCategoryIdIn(List<Long> categoryIds, Pageable pageable);
 
 }

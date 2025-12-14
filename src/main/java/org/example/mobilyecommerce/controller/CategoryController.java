@@ -3,7 +3,9 @@ package org.example.mobilyecommerce.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.mobilyecommerce.dto.CategoryDto;
+import org.example.mobilyecommerce.dto.ProductDto;
 import org.example.mobilyecommerce.service.CategoryService;
+import org.example.mobilyecommerce.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,7 @@ import java.util.Optional;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final ProductService productService;
 
     /**
      * 🟢 Create a new category with optional image upload.
@@ -89,6 +92,30 @@ public class CategoryController {
     @GetMapping("/root")
     public ResponseEntity<List<CategoryDto>> getRootCategories() {
         return ResponseEntity.ok(categoryService.getRootCategories());
+    }
+
+
+    /**
+     * 📦 Get all products by category ID
+     * @param categoryId the category ID
+     * @return list of ProductDto
+     */
+    @GetMapping("/{categoryId}/products")
+    public ResponseEntity<?> getProductsByCategory(
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(productService.getProductsByCategory(categoryId, page, size));
+    }
+
+    @GetMapping("/{parentCategoryId}/all-products")
+    public ResponseEntity<?> getProductsByParentCategory(
+            @PathVariable Long parentCategoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(productService.getProductsByParentCategory(parentCategoryId, page, size));
     }
 
 }
