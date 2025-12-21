@@ -3,9 +3,9 @@ spring:
     name: mobily-ecommerce
 
   datasource:
-    url: jdbc:mysql://72.60.188.251:3306/bigzero?useSSL=false&serverTimezone=UTC
-    username: mohalhal
-    password: "re9006#OP"
+    url: ${BIGZERO_DB_URL}
+    username: ${BIGZERO_DB_USER}
+    password: ${BIGZERO_DB_PASS}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -22,10 +22,13 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.example.mobilyecommerce: DEBUG
+server:
+  port: ${SERVER_PORT}
+
 token:
-  secret: FFEvJ($ePwE7ep6L6DRg(Du+U!@a7nh3FY*TTuf7tNIAzEvHjHn8cMD*uc+ENG3r
-  access-time: 1d
-  refresh-time: 10d
+  secret: ${TOKEN_SECRET}
+  access-time: ${TOKEN_ACCESS_TIME}
+  refresh-time: ${TOKEN_REFRESH_TIME}
 
   servlet:
     multipart:
